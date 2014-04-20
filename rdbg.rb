@@ -3,6 +3,7 @@ require_relative './ptrace_wrapper/lib/Ptrace'
 class RDBG
   def initialize(prog)
     @target = Ptrace::Target.launch(prog)
+    @thread = nil
   end
 
   def read_mem(addr,len)
@@ -75,21 +76,17 @@ class RDBG
   end
 
   def continue(blocking = false)
-    @target.cont_nonblocking
-    wait_stop if blocking
-  end
-
-  def wait_stop
-    loop do
-      s = Process.waitpid(@target.pid)
-      status = $?
-      if status.exited?
-        return false
-      elsif status.stopped?
-        return true
+    if blocking
+      @thread = Thread.new do
+        wait_for_signal("STOP")
       end
-      puts "unexpected signal #{s} #{$?}"
+      @thread.join
+    else
+      @thread = Thread.new do
+        wait_for_signal()
+      end
     end
+    @target.cont_nonblocking
   end
 
   def step()
@@ -97,7 +94,9 @@ class RDBG
   end
 
   def pause()
+    @thread.kill
     Process.kill("STOP",@target.pid)
+    Ptrace::Target::wait_for_signal(@target.pid, "STOP")
   end
 
   def kill()

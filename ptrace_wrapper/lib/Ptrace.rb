@@ -388,6 +388,20 @@ Target.attach.
       @valid = true
     end
 
+    def self.wait_for_signal(pid, *signals)
+      signals = signals.map{|str| ::Signal.list[str]}
+      loop do
+        Process.waitpid(pid)
+        status = $?
+        if signals.include?(status.stopsig)
+          return status
+        else
+          puts "unexpected status #{status}"
+          ptrace_send(pid, :cont, status.stopsig)
+        end
+      end
+    end
+
 =begin rdoc
 PT_ATTACH : Attach to running process 'pid' and return a Ptrace::Target object.
 Raises an exception if the attach fails.
@@ -396,7 +410,7 @@ Raises an exception if the attach fails.
       tgt = Target.new(pid)
       begin
         Ptrace::Debugger.send_cmd( Ptrace::Debugger.commands[:attach], pid, nil)
-        Process.waitpid(pid)
+        self.wait_for_signal(pid)
       rescue RuntimeError => e
         case e.message
           when 'PTRACE: Operation not permitted'
@@ -420,8 +434,7 @@ the command cannot be traced.
       pid = fork
       if ! pid
         begin
-          Ptrace::Debugger.send_cmd(Ptrace::Debugger.commands[:traceme], nil,
-                                    nil)
+          Ptrace::Debugger.send_cmd(Ptrace::Debugger.commands[:traceme], nil, nil)
           exec(cmd)
         rescue RuntimeError => e
           case e.message
@@ -433,12 +446,10 @@ the command cannot be traced.
               raise
           end
         end
-
       elsif pid == -1
         return nil
-
       else
-        Process.waitpid(pid)
+        self.wait_for_signal(pid, "TRAP", "STOP")
         tgt = Target.new(pid)
         return tgt
       end
@@ -466,7 +477,7 @@ Note: This makes the Ptrace::Target object invalid.
 =end
     def kill
       ptrace_send( :kill )
-      Process.waitpid(@pid)
+      self.wait_for_signal(@pid)
       @valid = false
     end
 
@@ -476,7 +487,7 @@ Note: This makes the Ptrace::Target object invalid.
 =end
     def detach
       ptrace_send( :detach )
-      Process.waitpid(@pid)
+      self.wait_for_signal(@pid)
       @valid = false
     end
 
@@ -485,7 +496,7 @@ PT_STEP : Step a single instruction.
 =end
     def step
       ptrace_send( :singlestep )
-      Process.waitpid(@pid)
+      self.wait_for_signal(@pid)
     end
 
 =begin rdoc
@@ -499,7 +510,7 @@ Usage:
 =end
     def syscall
       ptrace_send( :syscall )
-      Process.waitpid(@pid)
+      self.wait_for_signal(@pid)
     end
 
 =begin rdoc
@@ -528,7 +539,7 @@ PT_CONTINUE: Continue execution of target.
 =end
     def cont
       ptrace_send( :cont )
-      Process.waitpid(@pid)
+      self.wait_for_signal(@pid)
     end
 
     def cont_nonblocking()
