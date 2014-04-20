@@ -1,0 +1,20 @@
+2014-04-20 : Cornelius Aschermann
+	* Fix wrong constant names
+	* Fix reading memory with result -1
+	* Added nonblocking continue
+
+2013-03-04 :	mkfs <mkfs@thoughtgang.org>
+	*	Fixed build errors
+2013-03-03 :	mkfs <mkfs@thoughtgang.org>
+	*	Updated rakefile to handle new tasks
+2011-07-08 :	mkfs <mkfs@thoughtgang.org>
+	*	Added Hash of syscall num-to-name
+	*	Version bump
+
+2011-07-07 :	mkfs <mkfs@thoughtgang.org>
+	*	Fixed PTRACE_SYSCALL
+	*	Added x86 regs, fpregs, and fpxregs
+	*	Version bump
+
+2011-06-29 :	mkfs <mkfs@thoughtgang.org>
+	*	Initial version
