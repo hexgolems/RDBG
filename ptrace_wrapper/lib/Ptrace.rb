@@ -2,7 +2,7 @@
 # Copyright 2011 Thoughtgang <http://www.thoughtgang.org>
 # Ruby additions to Ptrace extension
 
-require 'Ptrace_ext'            # Load C extension wrapping ptrace(3)
+require_relative './Ptrace_ext.so'            # Load C extension wrapping ptrace(3)
 require 'forwardable'
 
 =begin rdoc
