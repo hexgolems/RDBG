@@ -24,7 +24,7 @@ Example
 
 This example illustrates how to use the RDBG class.
 
-```
+```ruby
 require './rdbg.rb'
 require 'pp'
 
