@@ -297,7 +297,7 @@ InvalidProcessError if the target process has exited.
       begin
         args = [@pid]
         args << arg if arg
-        Debugger.send( sym, *args )
+        return Debugger.send( sym, *args )
       rescue RuntimeError => e
         case e.message
           when 'PTRACE: Operation not permitted'
@@ -388,16 +388,16 @@ Target.attach.
       @valid = true
     end
 
-    def self.wait_for_signal(pid, *signals)
+    def wait_for_signal(*signals)
       signals = signals.map{|str| ::Signal.list[str]}
       loop do
-        Process.waitpid(pid)
+        Process.waitpid(@pid)
         status = $?
         if signals.include?(status.stopsig)
           return status
         else
           puts "unexpected status #{status}"
-          ptrace_send(pid, :cont, status.stopsig)
+          ptrace_send(:cont, status.stopsig)
         end
       end
     end
@@ -410,7 +410,7 @@ Raises an exception if the attach fails.
       tgt = Target.new(pid)
       begin
         Ptrace::Debugger.send_cmd( Ptrace::Debugger.commands[:attach], pid, nil)
-        self.wait_for_signal(pid)
+        tgt.wait_for_signal(pid)
       rescue RuntimeError => e
         case e.message
           when 'PTRACE: Operation not permitted'
@@ -449,8 +449,8 @@ the command cannot be traced.
       elsif pid == -1
         return nil
       else
-        self.wait_for_signal(pid, "TRAP", "STOP")
         tgt = Target.new(pid)
+        tgt.wait_for_signal(pid, "TRAP", "STOP")
         return tgt
       end
     end
@@ -477,7 +477,7 @@ Note: This makes the Ptrace::Target object invalid.
 =end
     def kill
       ptrace_send( :kill )
-      self.wait_for_signal(@pid)
+      wait_for_signal()
       @valid = false
     end
 
@@ -487,7 +487,7 @@ Note: This makes the Ptrace::Target object invalid.
 =end
     def detach
       ptrace_send( :detach )
-      self.wait_for_signal(@pid)
+      wait_for_signal()
       @valid = false
     end
 
@@ -496,7 +496,6 @@ PT_STEP : Step a single instruction.
 =end
     def step
       ptrace_send( :singlestep )
-      self.wait_for_signal(@pid)
     end
 
 =begin rdoc
@@ -510,7 +509,7 @@ Usage:
 =end
     def syscall
       ptrace_send( :syscall )
-      self.wait_for_signal(@pid)
+      wait_for_signal(@pid)
     end
 
 =begin rdoc
@@ -539,11 +538,11 @@ PT_CONTINUE: Continue execution of target.
 =end
     def cont
       ptrace_send( :cont )
-      self.wait_for_signal(@pid)
+      wait_for_signal(@pid)
     end
 
-    def cont_nonblocking()
-      ptrace_send( :cont )
+    def cont_nonblocking(signal = nil)
+      ptrace_send( :cont, signal)
     end
 
 =begin rdoc
@@ -571,21 +570,21 @@ PT_SYSEMU_SINGLESTEP
     private
 
     def ptrace_send( cmd, arg=nil )
-      begin
+#     begin
         raise OperationNotSupportedError if (not PTRACE_COMMANDS.include? cmd)
         raise OperationNotPermittedError if (not @valid)
 
         Debugger.send_cmd( PTRACE_COMMANDS[cmd], @pid, arg )
-      rescue RuntimeError => e
-        case e.message
-          when 'PTRACE: Operation not permitted'
-            raise OperationNotPermittedError.new(e.message)
-          when 'PTRACE: No such process'
-            raise InvalidProcessError.new(e.message)
-          else
-            raise
-        end
-      end
+#     rescue RuntimeError => e
+#       case e.message
+#         when 'PTRACE: Operation not permitted'
+#           raise OperationNotPermittedError.new(e.message)
+#         when 'PTRACE: No such process'
+#           raise InvalidProcessError.new(e.message)
+#         else
+#           raise
+#       end
+#     end
     end
 
   end
