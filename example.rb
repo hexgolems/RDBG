@@ -1,7 +1,7 @@
 require './rdbg.rb'
 require 'pp'
 
-d = RDBG.new("sleep 10")
+d = RDBG.new("/usr/games/parsec47")
 Thread.abort_on_exception = true
 #print infos on all mapped memory ranges
 pp d.mappings
