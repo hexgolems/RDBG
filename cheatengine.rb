@@ -3,7 +3,6 @@ require 'pry'
 
 cmd = "/usr/games/parsec47"
 
-
 # step first ten instructions, printing bytes at EIP and ESP
 
 def get_writable_mappings(d)
@@ -15,12 +14,14 @@ def run_and_wait(d)
   puts "Enter the current value of lives"
   target = gets.strip.to_i
   d.pause
+  puts "fnord1"
   return target
 end
 
 d = RDBG.new(cmd)
 target = run_and_wait(d)
 offsets =[]
+puts "blubl"
 get_writable_mappings(d).each do |m|
   puts "reading mapping #{m}"
   str = d.read_mem(m[:range].min, m[:range].max-m[:range].min+1)
@@ -33,7 +34,9 @@ end
 
 loop do
   next_target = run_and_wait(d)
+  puts "foo"
   next_offsets =[]
+  puts "fnord2"
   offsets.each do |o|
     next_offsets << o if d.read_mem(o,1) == next_target.chr
   end
