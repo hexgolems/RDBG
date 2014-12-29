@@ -12,11 +12,10 @@ end
 
 class PTEventLoop
 
-  attr_accessor :debugger
+  attr_accessor :debugger, :loop_thread
 
   def perform_action(action)
     if not @debugger.statemachine.run(:action, action)
-      puts "got nondefault action"
       res = action.block.call(@debugger)
       action.promise << res if action.promise
     end
@@ -32,7 +31,6 @@ class PTEventLoop
 
   def step_paused
     action = @action_queue.pop
-    puts "perform action #{action.inspect}"
     @queue_mutex.synchronize do
       perform_action(action)
     end
@@ -41,8 +39,6 @@ class PTEventLoop
   def step_running
     pid = Process.waitpid(@pid)
     status = $?
-    puts "handle signal #{status}"
-    puts "at #{@debugger.get_ip.to_s(16)}"
     @queue_mutex.synchronize do
       handle_signal(pid,status)
     end
@@ -50,7 +46,6 @@ class PTEventLoop
 
   def handle_signal( pid, status )
     if not @debugger.statemachine.run(:signal, status)
-      puts "unexpected: #{pid} #{status}, continueing"
       @debugger.target.cont_nonblocking( status.stopsig )
     end
   end
@@ -76,12 +71,9 @@ class PTEventLoop
     @action_queue = Queue.new
     @debugger = debugger
     @queue_mutex = Mutex.new
-    Thread.new do
+    @loop_thread = Thread.new do
       run_dbg(cmd)
       while @debugger.statemachine.alive?
-          puts "="*80
-          puts @debugger.breakpoints.inspect
-          #puts @debugger.statemachine.state.inspect
           step
       end
     end
