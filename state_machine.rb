@@ -35,7 +35,7 @@ class StateMachine
   end
 
   def check_action_step?
-    return check_action(:single_step)
+    return check_action(:step)
   end
 
   def check_action_continue?

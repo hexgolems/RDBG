@@ -64,7 +64,8 @@ class RDBG
 
 
   def set_reg(reg,val)
-    @event_loop.add_action(Action.new(:setreg,nil){|dbg| actions_set_reg(target, reg, val)})
+    @event_loop.add_action(Action.new(:setreg,nil){|dbg| action_set_reg(target, reg, val)})
+    return nil
   end
 
 
@@ -77,31 +78,39 @@ class RDBG
 
   def set_bp(addr)
     @event_loop.add_action( Action.new(:set_bp,nil){|dbg| action_set_bp(dbg.target, addr) })
+    return nil
   end
 
 
   def disable_bp(bp)
     @event_loop.add_action( Action.new(:disable_bp, nil) { bp.enabled = false } )
+    return nil
   end
 
   def enable_bp( bp)
     @event_loop.add_action( Action.new(:enable_bp, nil) { bp.enabled = true } )
+    return nil
   end
+
 
   def continue()
     @event_loop.add_action( Action.new(:continue, nil) )
+    return nil
   end
 
   def step()
     @event_loop.add_action( Action.new(:step, nil) )
+    return nil
   end
 
   def pause()
     @event_loop.add_action( Action.new(:pause, nil) )
+    return nil
   end
 
   def kill()
     @event_loop.add_action( Action.new( :kill, nil ){|target,evloop| target.kill} )
+    return nil
   end
 
   def action_set_bp( target,  addr )

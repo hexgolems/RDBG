@@ -1,4 +1,4 @@
-require './rdbg.rb'
+require '../rdbg.rb'
 require 'pry'
 
 cmd = "/usr/games/parsec47"
