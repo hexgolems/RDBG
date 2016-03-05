@@ -1,5 +1,4 @@
-require '../rdbg.rb'
-require 'pry'
+require_relative '../rdbg.rb'
 
 cmd = "/usr/games/parsec47"
 

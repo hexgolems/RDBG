@@ -1,8 +1,6 @@
-require '../rdbg.rb'
-require 'pry'
+require_relative '../rdbg.rb'
 
 cmd = "/usr/games/parsec47"
-#cmd = "/bin/ls"
 
 addr = 0x406FCC
 Thread.abort_on_exception = true

@@ -1,32 +1,30 @@
-require_relative './promise.rb'
+require 'English'
+require 'thread'
 require_relative './ptrace_wrapper/lib/Ptrace'
 require_relative './exceptions.rb'
 require_relative './state_machine.rb'
 
 class Action
-  attr_accessor :name,:block,:promise
-  def initialize(name,promise,&block)
-    @name,@promise,@block = name,promise,block
+  attr_accessor :name, :block, :promise
+  def initialize(name, promise, &block)
+    @name = name
+    @promise = promise
+    @block = block
   end
 end
 
 class PTEventLoop
-
   attr_accessor :debugger, :loop_thread
 
   def perform_action(action)
-    if not @debugger.statemachine.run(:action, action)
-      res = action.block.call(@debugger)
-      action.promise << res if action.promise
-    end
+    return if @debugger.statemachine.run(:action, action)
+    res = action.block.call(@debugger)
+    action.promise << res if action.promise
   end
 
   def step
-    if @debugger.statemachine.paused?
-      step_paused
-    else
-      step_running
-    end
+    return step_paused if @debugger.statemachine.paused?
+    step_running
   end
 
   def step_paused
@@ -38,25 +36,24 @@ class PTEventLoop
 
   def step_running
     pid = Process.waitpid(@pid)
-    status = $?
+    status = $CHILD_STATUS
     @queue_mutex.synchronize do
-      handle_signal(pid,status)
+      handle_signal(pid, status)
     end
   end
 
-  def handle_signal( pid, status )
-    if not @debugger.statemachine.run(:signal, status)
-      @debugger.target.cont_nonblocking( status.stopsig )
-    end
+  def handle_signal(_pid, status)
+    return if @debugger.statemachine.run(:signal, status)
+    @debugger.target.cont_nonblocking(status.stopsig)
   end
 
-  def run_dbg( cmd )
-    @debugger.target = Ptrace::Target.launch( cmd )
+  def run_dbg(cmd)
+    @debugger.target = Ptrace::Target.launch(cmd)
     @pid = @debugger.target.pid
   end
 
   def add_action(action)
-    raise ProcessDiedException unless @debugger.statemachine.alive?
+    fail ProcessDiedException unless @debugger.statemachine.alive?
     @queue_mutex.synchronize do
       if action.name == :pause && !@debugger.statemachine.paused?
         @debugger.statemachine.add_states(:wait_for_stop)
@@ -73,10 +70,7 @@ class PTEventLoop
     @queue_mutex = Mutex.new
     @loop_thread = Thread.new do
       run_dbg(cmd)
-      while @debugger.statemachine.alive?
-          step
-      end
+      step while @debugger.statemachine.alive?
     end
   end
-
 end
