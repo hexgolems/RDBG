@@ -1,4 +1,5 @@
 require 'set'
+require 'thread/promise'
 
 require_relative './ptrace_wrapper/lib/Ptrace'
 require_relative './ptevloop.rb'
